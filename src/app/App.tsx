@@ -39,7 +39,7 @@ export default function App() {
   const [inputScript, setInputScript] = useState('');
   const [outputScript, setOutputScript] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress] = useState(0);
   const [history, setHistory] = useState<HistoryItem[]>([
     {
       id: '1',
@@ -85,71 +85,44 @@ export default function App() {
     return highlighted;
   };
 
-  const generatePayload = async () => {
-    if (!inputScript.trim()) {
-      toast.error('Please enter a script first!', {
-        style: {
-          background: 'rgba(255, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 0, 0, 0.5)',
-          color: '#ff0044',
-          backdropFilter: 'blur(12px)'
-        }
-      });
-      return;
-    }
+const generatePayload = async () => {
+  if (!inputScript.trim()) {
+    toast.error("Please enter a script first!");
+    return;
+  }
 
-    setIsGenerating(true);
-    setProgress(0);
-    setOutputScript('');
+  setIsGenerating(true);
 
-    // Simulate progress
-    const progressTimer = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressTimer);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 150);
+  try {
+    const res = await fetch("http://localhost:5000/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ script: inputScript }),
+    });
 
-    // Simulate line-by-line generation
-    const lines = inputScript.split('\n');
-    let output = '';
-    
-    for (let i = 0; i < lines.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      output += lines[i] + '\n';
-      setOutputScript(output);
-      
-      if (outputRef.current) {
-        outputRef.current.scrollTop = outputRef.current.scrollHeight;
-      }
-    }
+    const data: { output: string } = await res.json();
 
-    setTimeout(() => {
-      setIsGenerating(false);
-      setProgress(0);
-      
-      // Add to history
-      const newItem: HistoryItem = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
-        name: `Payload ${history.length + 1}`,
-        script: inputScript
-      };
-      setHistory(prev => [newItem, ...prev.slice(0, 9)]);
-      
-      toast.success('Payload generated successfully!', {
-        style: {
-          background: 'rgba(0, 255, 136, 0.1)',
-          border: '1px solid rgba(0, 255, 136, 0.5)',
-          color: '#00ff88',
-          backdropFilter: 'blur(12px)'
-        }
-      });
-    }, 1500);
-  };
+    setOutputScript(data.output);
+
+    // add to history
+    const newItem: HistoryItem = {
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+      name: `Payload ${history.length + 1}`,
+      script: inputScript,
+    };
+
+    setHistory((prev) => [newItem, ...prev.slice(0, 9)]);
+
+    toast.success("Payload generated successfully!");
+  } catch (error) {
+    toast.error("Backend connection failed!");
+  }
+
+  setIsGenerating(false);
+};
 
   const copyToClipboard = async () => {
     if (!outputScript) {
