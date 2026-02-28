@@ -94,7 +94,7 @@ const generatePayload = async () => {
   setIsGenerating(true);
 
   try {
-    const res = await fetch("http://localhost:5000/generate", {
+    const res = await fetch("https://rubber-ducky-generator.onrender.com/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
